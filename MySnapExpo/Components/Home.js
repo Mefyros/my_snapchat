@@ -1,9 +1,9 @@
 import React from 'react';
-import { Container, Header, Button, Content, ActionSheet, Text, Root,Form, Item,  Label } from "native-base";
-import { Slider,AsyncStorage  } from 'react-native';
-import { Font, ImagePicker, AppLoading,Permissions } from 'expo';
+import { Container, Header, Button, Content, ActionSheet, Text, Root,Form, Item,  Label,Footer, FooterTab,Icon } from "native-base";
+import { AsyncStorage, Image  } from 'react-native';
+import { Font, AppLoading } from 'expo';
 import { Ionicons } from '@expo/vector-icons';
-import { Component, View, TouchableOpacity } from 'react-native'
+
 
 import ModalFilterPicker from 'react-native-modal-filter-picker'
 import axios from 'axios'
@@ -23,10 +23,7 @@ export default class Home extends React.Component
     super(props);
     this.state = {
       token : '',
-      people : [],
-      test : false,
-      visible: false,
-      picked: null,
+      snaps : [],
       duration : 1,
       image : '',
       picked : 'To Whom',
@@ -44,69 +41,21 @@ export default class Home extends React.Component
     let token = await AsyncStorage.getItem('user');
     this.setState({token : token})
     console.log(token)
-    axios.get('https://api.snapchat.wac.epitech.eu/all',{headers : {token : token }})
+    axios.get('https://api.snapchat.wac.epitech.eu/snaps',{headers : {token : token }})
     .then(res => {
-      for(let i = 0 ; i < res.data.data.length ; i++){
-        res.data.data[i].key = res.data.data[i].email.toLowerCase()
-        res.data.data[i].label = res.data.data[i].email
-      }
-      this.setState({people : res.data.data})
+      this.setState({snaps : res.data.data})
     })
     .catch(err => {
-      console.log(err)
+        AsyncStorage.removeItem('user');
+        this.props.navigation.navigate('Auth');
     })
     this.setState({test : true})
+
   } catch {
 
   }
   }
 
-  askPermissionsAsync = async () => {
-    await Permissions.askAsync(Permissions.CAMERA);
-    await Permissions.askAsync(Permissions.CAMERA_ROLL);
-    // you would probably do something to verify that permissions
-    // are actually granted, but I'm skipping that for brevity
-  };
-  useLibraryHandler = async () => {
-    await this.askPermissionsAsync();
-    let result = await ImagePicker.launchImageLibraryAsync({
-      allowsEditing: true,
-      base64: true,
-    });
-    this.setState({ image: result.base64 });
-    this.setState({ imageP: true})
-  };
-
-
-
-  useCameraHandler = async () => {
-    await this.askPermissionsAsync();
-    let result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      base64: true,
-    });
-    this.setState({ image: result.base64 });
-    this.setState({ imageP: true})
-
-  };
-
-  handleSend () {
-    if(this.state.imageP && this.state.picked != null){
-      let form = new FormData();
-      form.append('duration' , this.state.duration)
-      form.append('to' , this.state.picked)
-      form.append('image' , this.state.image)
-      axios.post('https://api.snapchat.wac.epitech.eu/snap',  {headers : {"Content-Type": "multipart/form-data", token : this.state.token}, body : form})
-      .then(res => { 
-        console.log(res)
-      }) 
-      .catch(err => {
-        console.log(err)
-      })
-    } else {
-      alert('non')
-    }
-  }
 
       deleteData = async () => {
         try {
@@ -120,68 +69,41 @@ export default class Home extends React.Component
       render () {
         const { visible, picked } = this.state;
         if(this.state.test){
+          if(this.state.imageP){
+            return(
+              
+<Image source={{uri : this.state.image}} style={{flex: 1,
+            resizeMode: 'contain'}} />
+            )
+          } else 
           return(
             <Container>
+              
         <Header />
         <Content>
-          <Form>
-          <Item stackedLabel>
-          <Label>Duration</Label>
-          <Slider
-    style={{width: 200, height: 40}}
-    value={this.state.duration}
-    minimumValue={1}
-    maximumValue={60}
-    minimumTrackTintColor="#455890"
-    maximumTrackTintColor="#000000"
-    onValueChange={value => this.setState({duration : Math.round(value)})}
-  />
-            <Text>{this.state.duration} Sec</Text>
-          </Item>
-        <Root>
-          
-          <Button
-          style={{marginBottom: 10}}
-          rounded
-          block
-            onPress={() =>
-            ActionSheet.show(
-              {
-                options: BUTTONS,
-                cancelButtonIndex: CANCEL_INDEX,
-                destructiveButtonIndex: DESTRUCTIVE_INDEX,
-                title: "Testing ActionSheet"
-              },
-              buttonIndex => {
-                if(buttonIndex == 0) {
-                  this.useCameraHandler()
-                } else if (buttonIndex == 1) {
-                  this.useLibraryHandler()
-                }
-              }
-            )}
-          >
-            <Text>{this.state.imageP ? 'You picked your image' : 'Pick your image'}</Text>
-          </Button>
-          </Root>
-         
-          </Form>
-          <Button
-          style={{marginBottom: 20}}
-          success
-          rounded
-          block
-           onPress={this.onShow}><Text>{this.state.picked}</Text></Button>
-          <ModalFilterPicker
-          visible={visible}
-          onSelect={this.onSelect}
-          onCancel={this.onCancel}
-          options={this.state.people}
-        />
+       
 
-        <Button rounded block danger onPress={this.handleSend.bind(this)}><Text>Send</Text></Button>
-          
+            {this.state.snaps.map((snap, i) => 
+                 <Button key ={i} info rounded block style={{marginTop: 10}} onPress={this.ShowSnap.bind(this,snap.snap_id, snap.duration)}><Text>{snap.from}</Text></Button>
+            )}
         </Content>
+        <Footer>
+          <FooterTab>
+            <Button vertical>
+              <Icon name="log-out" onPress={() => {AsyncStorage.removeItem('user')
+                                            this.props.navigation.navigate('Auth')}}/>
+              <Text>Logout</Text>
+            </Button>
+            <Button vertical active >
+              <Icon name="home" />
+              <Text>Home</Text>
+            </Button>
+            <Button vertical onPress={() => {this.props.navigation.navigate('Camera')}}>
+              <Icon active name="camera" />
+              <Text>Snap</Text>
+            </Button>
+          </FooterTab>
+        </Footer>
       </Container>
           )
             } else {
@@ -189,22 +111,27 @@ export default class Home extends React.Component
             }
       }
       
-
-      onShow = () => {
-        this.setState({ visible: true });
-      }
-    
-      onSelect = (picked) => {
-        this.setState({
-          picked: picked,
-          visible: false
-        })
-      }
-    
-      onCancel = () => {
-        this.setState({
-          visible: false
-        });
+      ShowSnap(id,duration) {
+          console.log(id)
+          this.setState({image: `https://api.snapchat.wac.epitech.eu/snap/${id}`})
+          this.setState({imageP : true})
+          setTimeout(() => {
+            axios.post('https://api.snapchat.wac.epitech.eu/seen',{id : id},{headers : {token : this.state.token }})
+            .then(res => {
+            console.log(res.data)
+            axios.get('https://api.snapchat.wac.epitech.eu/snaps',{headers : {token : this.state.token }})
+            .then(res => {
+            this.setState({snaps : res.data.data})
+            })
+          })
+           .catch(err => {
+             console.log(err)
+           })
+           
+          this.setState({imageP : false})
+          }, duration * 1000);
+          
+          
       }
       
       
