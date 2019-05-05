@@ -1,28 +1,39 @@
 
-import React, {Component} from 'react';
-import { Text, View} from 'react-native';
-import { createStackNavigator, createSwitchNavigator, createAppContainer } from 'react-navigation';
-import Register from './Components/Register';
-import Login from './Components/Login';
-import CameraScreen from './Components/Camera';
-import HomeScreen from './Components/Home'
-import AuthLoadingScreen from './Components/Auth';
+import React from 'react';
+import * as Expo from "expo";
+import {  AsyncStorage } from 'react-native';
 import { Font } from 'expo';
 import { Ionicons } from '@expo/vector-icons';
-
+import Oui from './Components/App'
 // Later on in your component
+export default class App extends React.Component
+{
+    constructor() {
+        super();
+        this.state = {
+          isReady: false
+        };
+      }
+      componentWillMount() {
+        this.loadFonts();
+    }
 
-const AppStack = createStackNavigator({ Home: HomeScreen, Camera : CameraScreen});
-const AuthStack = createStackNavigator({ SignIn: Login, SignUp: Register });
+    async loadFonts() {
+        await Font.loadAsync({
+            'Roboto': require('native-base/Fonts/Roboto.ttf'),
+            'Roboto_medium': require('native-base/Fonts/Roboto_medium.ttf'),
+            ...Ionicons.font,
+          });
+        this.setState({ isReady: true });
+    }
 
-export default createAppContainer(createSwitchNavigator(
-  
-  {
-    AuthLoading: AuthLoadingScreen,
-    App: AppStack,
-    Auth: AuthStack,
-  },
-  {
-    initialRouteName: 'AuthLoading',
-  }
-));
+    render() {
+        if (!this.state.isReady) {
+          return <Expo.AppLoading />;
+        }
+        return (
+            <Oui />
+        );
+      }
+    
+}

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Container, Header, Button, Content, ActionSheet, Text, Root,Form, Item,  Label,Footer, FooterTab,Icon } from "native-base";
-import { Slider,AsyncStorage  } from 'react-native';
+import { Slider,AsyncStorage, Image } from 'react-native';
 import { Font, ImagePicker, AppLoading,Permissions } from 'expo';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -18,6 +18,16 @@ var CANCEL_INDEX = 4;
 
 export default class Home extends React.Component
 {
+  static navigationOptions = {
+    headerTitle: 'Take A Snap',
+    headerStyle: {
+      backgroundColor: '#3F51B5',
+    },
+    headerTintColor: '#fff',
+    headerTitleStyle: {
+      fontWeight: 'bold',
+    },
+  };
   constructor(props) {
     super(props);
     this.state = {
@@ -42,7 +52,6 @@ export default class Home extends React.Component
     });
     let token = await AsyncStorage.getItem('user');
     this.setState({token : token})
-    console.log(token)
     axios.get('https://api.snapchat.wac.epitech.eu/all',{headers : {token : token }})
     .then(res => {
       for(let i = 0 ; i < res.data.data.length ; i++){
@@ -70,12 +79,12 @@ export default class Home extends React.Component
     await this.askPermissionsAsync();
     let result = await ImagePicker.launchImageLibraryAsync({
       allowsEditing: true,
-      base64: true,
+      base64: false,
     });
-    console.log(result)
-    this.setState({ image: result});
-    this.setState({ imageP: true})
-    console.log('oui')
+    if(!result.cancelled){
+      this.setState({ image: result });
+      this.setState({ imageP: true})
+      }
   };
 
 
@@ -86,9 +95,10 @@ export default class Home extends React.Component
       allowsEditing: true,
       base64: false,
     });
-    console.log(result)
+    if(!result.cancelled){
     this.setState({ image: result });
     this.setState({ imageP: true})
+    }
     
 
   };
@@ -131,7 +141,6 @@ export default class Home extends React.Component
         if(this.state.test){
           return(
             <Container>
-        <Header />
         <Content>
           <Form>
           <Item stackedLabel>
@@ -147,8 +156,9 @@ export default class Home extends React.Component
   />
             <Text>{this.state.duration} Sec</Text>
           </Item>
-        <Root>
-          
+        <Root style={{justifyContent: 'center',
+    alignItems: 'center',}}>
+          {!this.state.imageP ? 
           <Button
           style={{marginBottom: 10}}
           rounded
@@ -170,8 +180,10 @@ export default class Home extends React.Component
               }
             )}
           >
-            <Text>{this.state.imageP ? 'You picked your image' : 'Pick your image'}</Text>
+            <Text>Pick your image</Text>
           </Button>
+          :
+          <Image source={{uri : this.state.image.uri}}  style={{width: 100, height: 100, marginBottom : 10, marginTop: 10}} />}
           </Root>
          
           </Form>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Container, Header, Button, Content, ActionSheet, Text, Root,Form, Item,  Label,Footer, FooterTab,Icon } from "native-base";
-import { AsyncStorage, Image  } from 'react-native';
+import { AsyncStorage, ImageBackground, Dimensions  } from 'react-native';
 import { Font, AppLoading } from 'expo';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -19,6 +19,17 @@ var CANCEL_INDEX = 4;
 
 export default class Home extends React.Component
 {
+
+  static navigationOptions = {
+    headerTitle: 'WhatSnap',
+    headerStyle: {
+      backgroundColor: '#3F51B5',
+    },
+    headerTintColor: '#fff',
+    headerTitleStyle: {
+      fontWeight: 'bold',
+    },
+  };
   constructor(props) {
     super(props);
     this.state = {
@@ -27,7 +38,8 @@ export default class Home extends React.Component
       duration : 1,
       image : '',
       picked : 'To Whom',
-      imageP : false
+      imageP : false,
+      dure : 0
     };
   }
 
@@ -72,19 +84,23 @@ export default class Home extends React.Component
           if(this.state.imageP){
             return(
               
-<Image source={{uri : this.state.image}} style={{flex: 1,
-            resizeMode: 'contain'}} />
+<ImageBackground source={{uri : this.state.image}} style={{
+    flex: 1,
+    alignSelf: 'stretch',
+    width: undefined,
+    height: undefined
+    
+  }}onLoad={this._onLoad.bind(this)} >
+  <Text>{this.state.dure}</Text>
+  </ImageBackground>
             )
           } else 
           return(
             <Container>
               
-        <Header />
         <Content>
-       
-
             {this.state.snaps.map((snap, i) => 
-                 <Button key ={i} info rounded block style={{marginTop: 10}} onPress={this.ShowSnap.bind(this,snap.snap_id, snap.duration)}><Text>{snap.from}</Text></Button>
+                 <Button key ={i} info rounded block style={{marginTop: 10}} onPress={this.ShowSnap.bind(this, snap.snap_id, snap.duration)}><Text>{snap.from}</Text></Button>
             )}
         </Content>
         <Footer>
@@ -110,28 +126,33 @@ export default class Home extends React.Component
               return (<AppLoading/>)
             }
       }
+
+      _onLoad() {
+        let oui = setInterval(() => this.setState({dure : this.state.dure -1 }),1000)
+        setTimeout(() => {
+          axios.post('https://api.snapchat.wac.epitech.eu/seen',{id : this.state.id},{headers : {token : this.state.token }})
+          .then(res => {
+          console.log(res.data)
+          axios.get('https://api.snapchat.wac.epitech.eu/snaps',{headers : {token : this.state.token }})
+          .then(res => {
+          this.setState({snaps : res.data.data})
+          })
+        })
+         .catch(err => {
+           console.log(err)
+         })
+         clearInterval(oui)
+        this.setState({imageP : false})
+        }, this.state.duration * 1000);
+      }
       
       ShowSnap(id,duration) {
           console.log(id)
           this.setState({image: `https://api.snapchat.wac.epitech.eu/snap/${id}`})
           this.setState({imageP : true})
-          setTimeout(() => {
-            axios.post('https://api.snapchat.wac.epitech.eu/seen',{id : id},{headers : {token : this.state.token }})
-            .then(res => {
-            console.log(res.data)
-            axios.get('https://api.snapchat.wac.epitech.eu/snaps',{headers : {token : this.state.token }})
-            .then(res => {
-            this.setState({snaps : res.data.data})
-            })
-          })
-           .catch(err => {
-             console.log(err)
-           })
-           
-          this.setState({imageP : false})
-          }, duration * 1000);
-          
-          
+          this.setState({id : id}),
+          this.setState({duration : duration})
+          this.setState({dure : duration})
       }
       
       
